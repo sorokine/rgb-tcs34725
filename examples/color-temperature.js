@@ -1,6 +1,6 @@
-var tessel = require('tessel');
+//var tessel = require('tessel');
 var rgbLib = require('../');
-var rgb = rgbLib.use(tessel.port.A);
+var rgb = rgbLib.use('/dev/i2c-1', 'P8_12', 'P8_13');
 
 rgb.on('ready', function() {
   
