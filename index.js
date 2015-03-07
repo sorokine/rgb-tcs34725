@@ -2,6 +2,7 @@ var events = require('events');
 var util = require('util');
 var async = require('async');
 var i2c = require('i2c');
+var bone = require('bonescript');
 
 var MODULE_ID = 0x44; // The ID that should always be returned by this module
 var TCS34725_ADDRESS = 0x29; // The I2C address of this module
@@ -27,22 +28,19 @@ var TCS34725_AILTH = 0x05 // Set low channel interrupt level
 var TCS34725_AIHTL = 0x06 // Clear high channel interrupt level
 var TCS34725_AIHTH = 0x07 // Set high channel interrupt level
 
-function use(bus, led_pin, irq_pin, callback) {
-  return new RGB(bus, led_pin, irq_pin, callback);
+function use(hardware, callback) {
+  return new RGB(hardware, callback);
 }
 
 
-function RGB(bus, led_pin, irq_pin, callback) {
+function RGB(hardware, callback) {
   var self = this;
-  // self.hardware = hardware;
+  self.hardware = hardware;
   // self.i2c = hardware.I2C(TCS34725_ADDRESS);
   // self.irq = hardware.digital[0];
   // self.led = hardware.digital[1];
-  self.bus = bus;
-  self.i2c = new i2c(TCS34725_ADDRESS, {device: bus });
-  self.irq = irq_pin;
-  self.led = led_pin;
-  
+  self.i2c = new i2c(TCS34725_ADDRESS, {device: hardware.bus });
+
   self._initialize(function(err) {
     if (self.failCallback(err, callback)) {
       setImmediate(function() {
@@ -112,6 +110,8 @@ RGB.prototype._initialize = function(callback) {
           });
         }
       });
+      if (self.hardware.led_pin)
+        bone.pinMode(self.hardware.led_pin, bone.OUTPUT);
     }
   });
 };
@@ -290,8 +290,10 @@ RGB.prototype.setInterrupt = function(enable, callback) {
   self._read8Bits(TCS34725_ENABLE, function(err, val) {
     if (!self.failCallback(err, callback)) {
       if (enable) {
-        val = val.readUInt8(0) | TCS34725_ENABLE_AIEN;
+        //val = val.readUInt8(0) | TCS34725_ENABLE_AIEN;
+        val = val | TCS34725_ENABLE_AIEN;
 
+        // FIXME: BBB
         self.irq.on('fall', function() {
           self._clearInterrupt(function() {
             self.emit('interrupt');
@@ -301,6 +303,7 @@ RGB.prototype.setInterrupt = function(enable, callback) {
       else {
         val &= ~TCS34725_ENABLE_AIEN
 
+        // FIXME: BBB
         self.irq.removeAllListeners();
       }
       self._write8Bits(TCS34725_ENABLE, val, callback);
@@ -311,7 +314,8 @@ RGB.prototype.setInterrupt = function(enable, callback) {
 RGB.prototype._clearInterrupt = function(callback) {
   var self = this;
 
-  self.i2c.send(new Buffer([0x66]), callback);
+  //self.i2c.send(new Buffer([0x66]), callback);
+  self.i2c.writeByte(0x66, callback);
 };
 
 RGB.prototype.setIntLimits = function(low, high, callback) {
@@ -349,7 +353,8 @@ RGB.prototype._setHighIntLimit = function(val, callback) {
 };
 
 RGB.prototype.setLED = function(on, callback) {
-  this.hardware.digital[1].output(on);
+  bone.digitalWrite(this.hardware.led_pin, on);
+  // this.hardware.digital[1].output(on);
 
   if (callback) {
     callback();
