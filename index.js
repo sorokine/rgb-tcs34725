@@ -112,6 +112,8 @@ RGB.prototype._initialize = function(callback) {
       });
       if (self.hardware.led_pin)
         bone.pinMode(self.hardware.led_pin, bone.OUTPUT);
+      if (self.hardware.irq_pin)
+        bone.pinMode(self.hardware.irq_pin, bone.INPUT);
     }
   });
 };
@@ -293,8 +295,8 @@ RGB.prototype.setInterrupt = function(enable, callback) {
         //val = val.readUInt8(0) | TCS34725_ENABLE_AIEN;
         val = val | TCS34725_ENABLE_AIEN;
 
-        // FIXME: BBB
-        self.irq.on('fall', function() {
+        //self.irq.on('fall', function() {
+        bone.attachInterrupt(self.hardware.irq_pin, true, bone.FALLING, function() {
           self._clearInterrupt(function() {
             self.emit('interrupt');
           });
@@ -303,8 +305,8 @@ RGB.prototype.setInterrupt = function(enable, callback) {
       else {
         val &= ~TCS34725_ENABLE_AIEN
 
-        // FIXME: BBB
-        self.irq.removeAllListeners();
+        //self.irq.removeAllListeners();
+        bone.detachInterrupt(self.hardware.irq_pin);
       }
       self._write8Bits(TCS34725_ENABLE, val, callback);
     }
@@ -315,7 +317,7 @@ RGB.prototype._clearInterrupt = function(callback) {
   var self = this;
 
   //self.i2c.send(new Buffer([0x66]), callback);
-  self.i2c.writeByte(0x66, callback);
+  self.i2c.writeByte(0x66, callback); // I am not sure if this works for BBB
 };
 
 RGB.prototype.setIntLimits = function(low, high, callback) {
