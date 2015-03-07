@@ -1,6 +1,7 @@
 var events = require('events');
 var util = require('util');
 var async = require('async');
+var i2c = require('i2c');
 
 var MODULE_ID = 0x44; // The ID that should always be returned by this module
 var TCS34725_ADDRESS = 0x29; // The I2C address of this module
@@ -26,17 +27,22 @@ var TCS34725_AILTH = 0x05 // Set low channel interrupt level
 var TCS34725_AIHTL = 0x06 // Clear high channel interrupt level
 var TCS34725_AIHTH = 0x07 // Set high channel interrupt level
 
-function use(hardware, callback) {
-  return new RGB(hardware, callback);
+function use(bus, led_pin, irq_pin, callback) {
+  return new RGB(bus, led_pin, irq_pin, callback);
 }
 
 
-function RGB(hardware, callback) {
+function RGB(bus, led_pin, irq_pin, callback) {
   var self = this;
-  self.hardware = hardware;
-  self.i2c = hardware.I2C(TCS34725_ADDRESS);
-  self.irq = hardware.digital[0];
-  self.led = hardware.digital[1];
+  // self.hardware = hardware;
+  // self.i2c = hardware.I2C(TCS34725_ADDRESS);
+  // self.irq = hardware.digital[0];
+  // self.led = hardware.digital[1];
+  self.bus = bus;
+  self.i2c = new i2c(TCS34725_ADDRESS, {device: bus });
+  self.irq = irq_pin;
+  self.led = led_pin;
+  
   self._initialize(function(err) {
     if (self.failCallback(err, callback)) {
       setImmediate(function() {
@@ -60,16 +66,16 @@ util.inherits(RGB, events.EventEmitter);
 
 RGB.prototype.integrationTimes = {
   2.4 : 0xFF, /**<  2.4ms - 1 cycle    - Max Count: 1024  */
-  24 : 0xF6, /**<  24ms  - 10 cycles  - Max Count: 10240 */
-  50 : 0xEB, /**<  50ms  - 20 cycles  - Max Count: 20480 */
+   24 : 0xF6, /**<  24ms  - 10 cycles  - Max Count: 10240 */
+   50 : 0xEB, /**<  50ms  - 20 cycles  - Max Count: 20480 */
   101 : 0xD5, /**<  101ms - 42 cycles  - Max Count: 43008 */
   154 : 0xC0, /**<  154ms - 64 cycles  - Max Count: 65535 */
   300 : 0x00, /**<  700ms - 256 cycles - Max Count: 65535 */
 };
 
 RGB.prototype.gains = {
-  1 : 0x00, /**<  No gain  */
-  4 : 0x01, /**<  2x gain  */
+   1 : 0x00, /**<  No gain  */
+   4 : 0x01, /**<  2x gain  */
   16 : 0x02, /**<  16x gain */
   60 : 0x03, /**<  60x gain */
 };
@@ -91,7 +97,8 @@ RGB.prototype._initialize = function(callback) {
   var self = this;
 
   self._read8Bits(TCS34725_ID, function(err, id) {
-    if (id.readUInt8(0) != MODULE_ID) {
+//    if (id.readUInt8(0) != MODULE_ID) {
+    if (id != MODULE_ID) {
       var err = new Error("Unable to read ID off module. It may not be connected properly");
       return self.failCallback(err, callback);
     }
@@ -153,15 +160,18 @@ RGB.prototype.setGain = function(gain, callback) {
 };
 
 RGB.prototype._read8Bits = function(reg, callback) {
-  this.i2c.transfer(new Buffer([TCS34725_COMMAND_BIT | reg]), 1, callback);
+//  this.i2c.transfer(new Buffer([TCS34725_COMMAND_BIT | reg]), 1, callback);
+  this.i2c.readBytes(TCS34725_COMMAND_BIT | reg, 1, function(err, data) { callback(err, data[0]) });
 };
 
 RGB.prototype._read16Bits = function(reg, callback) {
-  this.i2c.transfer(new Buffer([TCS34725_COMMAND_BIT | reg]), 2, callback);
+//  this.i2c.transfer(new Buffer([TCS34725_COMMAND_BIT | reg]), 2, callback);
+  this.i2c.readBytes(TCS34725_COMMAND_BIT | reg, 2, callback);
 };
 
 RGB.prototype._write8Bits = function(reg, value, callback) {
-  this.i2c.send(new Buffer([TCS34725_COMMAND_BIT | reg, value & 0xFF]), callback);
+//  this.i2c.send(new Buffer([TCS34725_COMMAND_BIT | reg, value & 0xFF]), callback);
+  this.i2c.writeBytes(TCS34725_COMMAND_BIT | reg, [value & 0xFF], callback);
 };
 
 RGB.prototype.getRawData = function(callback) {
