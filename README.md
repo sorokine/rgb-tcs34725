@@ -1,4 +1,4 @@
-rgb-tcs34725
+BBB-TCS34725
 ============
 
 A JavaScript driver for the TCS34725 RGB sensor.  Modified from the original https://github.com/johnnyman727/rgb-tcs34725 for BeagleBoneBlack (BBB).  Use it to find the red, green, blue, or clear levels of anything you point it at. The API gives you access to the raw RGBC data, color temperatures, and lux intensity. You can buy the breakout board from [Adafruit](http://www.adafruit.com/product/1334).
