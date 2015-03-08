@@ -1,18 +1,18 @@
 rgb-tcs34725
 ============
 
-A JavaScript driver for the TCS34725 RGB sensor. Use it to find the red, green, blue, or clear levels of anything you point it at. The API gives you access to the raw RGBC data, color temperatures, and lux intensity. You can buy the breakout board from [Adafruit](http://www.adafruit.com/product/1334).
+A JavaScript driver for the TCS34725 RGB sensor.  Modified from the original https://github.com/johnnyman727/rgb-tcs34725 for BeagleBoneBlack (BBB).  Use it to find the red, green, blue, or clear levels of anything you point it at. The API gives you access to the raw RGBC data, color temperatures, and lux intensity. You can buy the breakout board from [Adafruit](http://www.adafruit.com/product/1334).
 
 ![Breakout Image](http://www.adafruit.com/images/970x728/1334-00.jpg)
 
 The chip also has support for threshold interrupts on the clear channel and those APIs have been implemented here but not fully tested.
 
 ## Installation
-```npm install rgb-tcs34725```
+```npm install BBB-TCS34725```
 
 ## Hardware Connections to Tessel
 
-You can connect the module to any of the ports on Tessel:
+You can connect the module to the following the ports on BBB:
 
 VIN  ->  Unconnected 
 
@@ -20,13 +20,13 @@ GND  ->  GND
 
 3V3  ->  3V3 
 
-SCL  ->  SCL
+SCL  ->  I2C2_SCL
 
-SDA  ->  SDA
+SDA  ->  I2C2_SDA
 
-INT  ->  GPIO 1
+INT  ->  GPIO_26 // configurable
 
-LED  ->  GPIO 2
+LED  ->  GPIO_61 // configurable
 
 
 
@@ -34,10 +34,16 @@ LED  ->  GPIO 2
 
 ## Example Usage
 ```.js
-var tessel = require('tessel');
+//var tessel = require('tessel');
 var rgbLib = require('../');
-var rgb = rgbLib.use(tessel.port.A);
+//var rgb = rgbLib.use(tessel.port.A);
+var rgb = rgbLib.use({ 
+  "bus"     : "/dev/i2c-1", 
+  "led_pin" : "P8_14", // will be ignored if not set
+  "irq_pin" : "P8_26"  // will be ignored if not set
+});
 
+var ledON = false;
 rgb.on('ready', function() {
   
   setInterval(function() {
@@ -48,16 +54,19 @@ rgb.on('ready', function() {
       console.log('GREEN:', colors.green);
       console.log('BLUE:', colors.blue);
       console.log('CLEAR:', colors.clear);
-    })
+    });
+    
+    ledON = !ledON;
+    rgb.setLED(ledON);
   }, 1000);
-});
+})
 ```
 
 ## API
 
 ### Commands
 
-```library.use(hardware, callback)``` initializes the module on the port of a microcontroller. It returns the `rgb` object and the callback has the form of `callback(err, rgb)`.
+```library.use({ "bus" : "/dev/i2c-1", ...}, callback)``` initializes the module on the port of a microcontroller. It returns the `rgb` object and the callback has the form of `callback(err, rgb)`.
 
 ```rgb.getRawData(err, colors)``` returns rgbc data. `colors` has `red`, `green`, `blue`, and `clear` properties. Each of the colors is a 16 bit number.
 
