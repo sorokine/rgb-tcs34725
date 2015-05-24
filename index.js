@@ -44,7 +44,7 @@ function RGB(hardware, callback) {
   self._initialize(function(err) {
     if (self.failCallback(err, callback)) {
       setImmediate(function() {
-        this.emit('error', err);
+        self.emit('error', err);
       }.bind(this));
       return;
     }
