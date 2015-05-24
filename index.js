@@ -96,7 +96,8 @@ RGB.prototype._initialize = function(callback) {
 
   self._read8Bits(TCS34725_ID, function(err, id) {
 //    if (id.readUInt8(0) != MODULE_ID) {
-    if (id != MODULE_ID) {
+    // disabled, got different IDs depending on bus?
+    if (false && id != MODULE_ID) {
       var err = new Error("Unable to read ID off module. It may not be connected properly");
       return self.failCallback(err, callback);
     }
