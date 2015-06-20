@@ -4,7 +4,7 @@ var async = require('async');
 var i2c = require('i2c');
 var bone = require('bonescript');
 
-var MODULE_ID = 0x44; // The ID that should always be returned by this module
+//var MODULE_ID = 0x44; // The ID that should always be returned by this module
 var TCS34725_ADDRESS = 0x29; // The I2C address of this module
 var TCS34725_ID = 0x012; // The command to read the module ID
 var TCS34725_COMMAND_BIT = 0x80; // The command to signal that we're command it to do something
@@ -97,25 +97,23 @@ RGB.prototype._initialize = function(callback) {
   self._read8Bits(TCS34725_ID, function(err, id) {
 //    if (id.readUInt8(0) != MODULE_ID) {
     // disabled, got different IDs depending on bus?
-    if (false && id != MODULE_ID) {
-      var err = new Error("Unable to read ID off module. It may not be connected properly");
-      return self.failCallback(err, callback);
+    if (self.hardware.module_id && id != self.hardware.module_id) {
+      var id_err = new Error("Unable to read ID off module. It may not be connected properly");
+      return self.failCallback(id_err, callback);
     }
-    else {
-      self.setIntegrationTime(self.integrationTimes[24], function(err) {
-        if (!self.failCallback(err, callback)) {
-          self.setGain(self.gains[1], function(err) {
-            if (!self.failCallback(err, callback)) {
-              self.enable(callback);
-            }
-          });
-        }
-      });
-      if (self.hardware.led_pin)
-        bone.pinMode(self.hardware.led_pin, bone.OUTPUT);
-      if (self.hardware.irq_pin)
-        bone.pinMode(self.hardware.irq_pin, bone.INPUT);
-    }
+    self.setIntegrationTime(self.integrationTimes[24], function(err) {
+      if (!self.failCallback(err, callback)) {
+        self.setGain(self.gains[1], function(err) {
+          if (!self.failCallback(err, callback)) {
+            self.enable(callback);
+          }
+        });
+      }
+    });
+    if (self.hardware.led_pin)
+      bone.pinMode(self.hardware.led_pin, bone.OUTPUT);
+    if (self.hardware.irq_pin)
+      bone.pinMode(self.hardware.irq_pin, bone.INPUT);
   });
 };
 

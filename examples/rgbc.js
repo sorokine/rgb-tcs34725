@@ -4,7 +4,8 @@ var rgbLib = require('../');
 var rgb = rgbLib.use({ 
   "bus"     : "/dev/i2c-1", 
   "led_pin" : "P8_14", 
-  "irq_pin" : "P8_26"
+  "irq_pin" : "P8_26",
+  "module_id" : 0x44
 });
 
 var ledON = false;
