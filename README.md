@@ -40,7 +40,8 @@ var rgbLib = require('../');
 var rgb = rgbLib.use({ 
   "bus"     : "/dev/i2c-1", 
   "led_pin" : "P8_14", // will be ignored if not set
-  "irq_pin" : "P8_26"  // will be ignored if not set
+  "irq_pin" : "P8_26", // will be ignored if not set
+  "module_id" : 0x44   // hardware ID as returned by i2c module, will be ignored if not set
 });
 
 var ledON = false;
